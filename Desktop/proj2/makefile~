@@ -1,0 +1,7 @@
+ all:
+	clear
+	gcc -o dl main.c FTP.c sockets.c
+
+ clean:
+
+	rm -f dl
