@@ -19,7 +19,10 @@ int regex(char* src){
 	char err_buf[BUFSIZ];  
 
 	/* The regular expression pattern (might be changed) */
-	const char* pattern = "(([a-z0-9]+):([a-z0-9]+)@)*([\\.a-z0-9]+)/([/a-z0-9]+)$";
+	const char* pattern = "ftp://(([a-z0-9]+):([a-z0-9]+)@)*([\\.a-z0-9]+)/([\\./a-z0-9]+)$";
+	/* The anonymous one */
+	const char* patternAnon = "ftp://([\\.a-z0-9]+)/([\\./a-z0-9]+)$";
+
 	regex_t* regex = (regex_t*)malloc(sizeof(regex_t));
 
 	regmatch_t pmatch[10];
