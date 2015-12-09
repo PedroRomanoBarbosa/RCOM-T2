@@ -9,9 +9,9 @@ typedef struct {
     char* hostName;
     char* path;
     char* fileName;
-} FTPConnection;
+} FTPData;
 
-FTPConnection FTPConn;
+FTPData data;
 
 int FTPSendRec(int sockfd, char* buf, char* response);
 
