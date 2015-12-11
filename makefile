@@ -1,2 +1,2 @@
 all:
-	gcc -o app main.c FTP.c -Wall
+	gcc -o app main.c FTP.c URL.c -Wall
