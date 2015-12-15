@@ -33,18 +33,18 @@ struct url{
 	char* password;
 	char* host;
 	char* filePath;
-	int	sockfd;
 } FTPUrl;
 
 struct socket{
 	int	sockfd;
+	int datafd;
 } FTPSocket;
 
 int initializeStruct(char* matches[], int size);
 
 int printStruct();
 
-int sendRec(int sockfd, char* buf, char* response);
+int createSocket(char* host, int port, int* socket);
 
 int openConnection();
 

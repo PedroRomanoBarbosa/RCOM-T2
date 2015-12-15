@@ -59,17 +59,13 @@ int parseUrl(char* str){
 	return ERROR;
 }
 
-int openConnection(){
-
+int createSocket(char* host, int port, int* sock){
 	struct	sockaddr_in server_addr;
 	struct hostent *h;
 	char* ip;
-	int n;
-	char response[MAX_RESP];
-	int respNumber;
 
 	/* Gets server ip address from DNS name */
-	if ((h = gethostbyname(FTPUrl.host)) == NULL) {  
+	if ((h = gethostbyname(host)) == NULL) {  
 		herror("	[FTP] gethostbyname");
 		return ERROR;
 	}
@@ -79,19 +75,32 @@ int openConnection(){
 	bzero((char*)&server_addr,sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = inet_addr(ip);
-	server_addr.sin_port = htons(FTP_PORT);
+	server_addr.sin_port = htons(port);
 
 	/*open an TCP socket*/
 	printf("	[FTP] Creating FTP socket to %s\n", ip);
-	if ((FTPSocket.sockfd = socket(AF_INET,SOCK_STREAM,0)) < 0) {
+	if ((*sock = socket(AF_INET,SOCK_STREAM,0)) < 0) {
 		printf(" [FTP] Error opening socket\n");
     	return ERROR;
 	}
 
 	/*connect to the server*/
-	if(connect(FTPSocket.sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
+	if(connect(*sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
 	    printf("	[FTP] Error connecting to socket\n");
 		return ERROR;
+	}
+
+	return OK;
+}
+
+int openConnection(){
+
+	int n;
+	char response[MAX_RESP];
+	int respNumber;
+
+	if( createSocket(FTPUrl.host, FTP_PORT, &FTPSocket.sockfd) == ERROR){
+		printf("	[FTP] Error creating connection socket\n");
 	}
 
 	/* Read the response from the server */
@@ -220,8 +229,11 @@ int setPassive(){
 		printf("	[FTP] Error creating full ip address\n");
 		return ERROR;
 	}
-	port = respPort[0] + 256 * respPort[1];
-	printf("	[FTP] passive mode ip addres: %s:%d\n", addr, port);
+	port = respPort[0] * 256 + respPort[1];
+	printf("	[FTP] passive mode ip address: %s:%d\n", addr, port);
+
+	/* Create a data socket */
+	createSocket(addr, port, &FTPSocket.datafd);
 
 
 	return OK;
@@ -240,8 +252,14 @@ int download(){
 }
 
 int closeConnection(){
+
 	if(close(FTPSocket.sockfd) == ERROR){
-		perror("	[FTP] Error closing socket connection");
+		perror("	[FTP] Error closing connection socket");
+		return ERROR;
+	}
+
+	if(close(FTPSocket.datafd) == ERROR){
+		perror("	[FTP] Error closing data socket");
 		return ERROR;
 	}
     
