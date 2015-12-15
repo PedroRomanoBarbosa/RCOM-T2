@@ -1,5 +1,5 @@
-#ifndef _URL_H_
-#define _URL_H_
+#ifndef _PARSER_H_
+#define _PARSER_H_
 
 #include <regex.h>
 #include <stdio.h>
@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "Macros.h"
+#include "macros.h"
 
 
 /**
