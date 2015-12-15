@@ -1,6 +1,9 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
+#define PARSER_LOG "[PARSER]"
+#define N_MATCH 6
+
 #include <regex.h>
 #include <stdio.h>
 #include <sys/types.h>

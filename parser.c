@@ -2,6 +2,7 @@
 
 char* pattern = "ftp://(([a-zA-Z0-9]+):([a-zA-Z0-9]+)@)?([\\.a-zA-Z0-9:]+)/([\\./a-zA-Z0-9]+)$";
 
+
 int regexMatch(char* src, char* matches[]){
 	int i;
 	int res;
@@ -15,7 +16,7 @@ int regexMatch(char* src, char* matches[]){
 
 	if( (res = regcomp(regex, pattern, REG_EXTENDED)) != 0) {
 		regerror(res, regex, err_buf, BUFSIZ);
-		printf("		[PARSER] regcomp: %s\n", err_buf);
+		printf("		%s regcomp: %s\n", PARSER_LOG, err_buf);
 		return ERROR;
 	}
 

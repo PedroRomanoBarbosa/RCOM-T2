@@ -12,13 +12,17 @@ int initializeStruct(char* matches[], int size){
 				/* Check if the user is anonymous or not */
 				if(strcmp(match,"") == 0){
 					FTPUrl.anon = TRUE;
+					FTPUrl.username = "anonymous";
+					FTPUrl.password = "123456";
 				}else{
 					FTPUrl.anon = FALSE;
 					FTPUrl.username = match;
 				}
 				break;
 			case PASSWORD:
-				FTPUrl.password = match;
+				if(!FTPUrl.anon){
+					FTPUrl.password = match;
+				}
 				break;
 			case HOST:
 				FTPUrl.host = match;
@@ -32,25 +36,15 @@ int initializeStruct(char* matches[], int size){
 	return OK;
 }
 
-int sendRec(int sockfd, char* buf, char* response){
-  return OK;
-}
-
 int printStruct(){
 	printf("	[FTP] ## URL STRUCTURE ##\n");
-	if(FTPUrl.anon){
-		printf("	[FTP] username: anonymous\n");
-		printf("	[FTP] password: 123456\n");
-	}else{
-		printf("	[FTP] username: %s\n", FTPUrl.username);
-		printf("	[FTP] password: %s\n", FTPUrl.password);
-	}
+	printf("	[FTP] username: %s\n", FTPUrl.username);
+	printf("	[FTP] password: %s\n", FTPUrl.password);
 	printf("	[FTP] host: %s\n", FTPUrl.host);
 	printf("	[FTP] path: %s\n", FTPUrl.filePath);
 
 	return OK;
 }
-
 
 int parseUrl(char* str){
 	char* matches[N_MATCH];
@@ -67,10 +61,12 @@ int parseUrl(char* str){
 
 int openConnection(){
 
-	int	sockfd;
 	struct	sockaddr_in server_addr;
 	struct hostent *h;
 	char* ip;
+	int n;
+	char response[MAX_RESP];
+	int respNumber;
 
 	/* Gets server ip address from DNS name */
 	if ((h = gethostbyname(FTPUrl.host)) == NULL) {  
@@ -87,14 +83,29 @@ int openConnection(){
 
 	/*open an TCP socket*/
 	printf("	[FTP] Creating FTP socket to %s\n", ip);
-	if ((sockfd = socket(AF_INET,SOCK_STREAM,0)) < 0) {
+	if ((FTPSocket.sockfd = socket(AF_INET,SOCK_STREAM,0)) < 0) {
 		printf(" [FTP] Error opening socket\n");
     	return ERROR;
 	}
 
 	/*connect to the server*/
-	if(connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
+	if(connect(FTPSocket.sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
 	    printf("	[FTP] Error connecting to socket\n");
+		return ERROR;
+	}
+
+	/* Read the response from the server */
+	if( (n = read(FTPSocket.sockfd, response, sizeof(response))) == ERROR){
+		perror("	[FTP] Error readin return response from server\n");
+		return ERROR;
+	}
+	if(sscanf(response,"%d", &respNumber) == EOF){
+		printf("	[FTP] Error fetching number from response\n");
+		return ERROR;
+	}
+	printf("	[FTP] < %d\n", respNumber);
+	if(respNumber != CONN){
+		printf("	[FTP] Invalid response from server\n");
 		return ERROR;
 	}
 
@@ -102,11 +113,118 @@ int openConnection(){
 }
 
 int login(){
-  return OK;
+
+	if(userCommand() == ERROR){
+		return ERROR;
+	}
+
+	if(passwordCommand() == ERROR){
+		return ERROR;
+	}
+
+	return OK;
 }
 
-int setPassiveMode(){
-  return OK;
+int userCommand(){
+	char userCmd[MAX_CMD];
+	char response[MAX_RESP];
+	int n;
+
+	sprintf(userCmd,"USER %s\r\n", FTPUrl.username);
+	printf("	[FTP] > USER %s\n", FTPUrl.username);
+
+	n = sendCommand(userCmd, response);
+	if(n == ERROR){
+		printf("	[FTP] Error executing USER command\n");
+		return ERROR;
+	}else if(n != USER_VALID){
+		printf("	[FTP] Invalid response from the server\n");
+		return ERROR;
+	}
+
+	return OK;
+}
+
+int passwordCommand(){
+	char passwordCmd[MAX_CMD];
+	char response[MAX_RESP];
+	int n;
+
+	sprintf(passwordCmd,"PASS %s\r\n", FTPUrl.password);
+	printf("	[FTP] > PASS %s\n", FTPUrl.password);
+
+	n = sendCommand(passwordCmd, response);
+	if(n == ERROR){
+		printf("	[FTP] Error executing PASS command\n");
+		return ERROR;
+	}else if(n != PASS_VALID){
+		printf("	[FTP] Invalid response from the server\n");
+		return ERROR;
+	}
+
+	return OK;
+}
+
+int sendCommand(char* cmd, char resp[]){
+	int respNumber;
+	char response[MAX_RESP];
+	int n;
+
+	if( (n = write(FTPSocket.sockfd, cmd, strlen(cmd))) == ERROR){
+		perror("	[FTP] Error writting command to server: ");
+		printf("%s\n", cmd);
+		return ERROR;
+	}
+
+	if( (n = read(FTPSocket.sockfd, response, sizeof(response))) == ERROR){
+		perror("	[FTP] Error reading return response from server\n");
+		return ERROR;
+	}
+	if(sscanf(response,"%d", &respNumber) == EOF){
+		printf("	[FTP] Error fetching number from response\n");
+		return ERROR;
+	}
+	printf("	[FTP] < %d\n", respNumber);
+
+	memcpy(resp,response,strlen(response));
+
+	return respNumber;
+}
+
+int setPassive(){
+	int n;
+	char* pasvCmd = "PASV\r\n";
+	char response[MAX_RESP];
+	int respAddr[IP_LENGTH];
+	int respPort[PORT_LENGTH];
+	char addr[MAX_IP_LENGTH];
+	int port;
+
+	n = sendCommand(pasvCmd, response);
+	if(n == ERROR){
+		printf("	[FTP] Error executing PASV command\n");
+		return ERROR;
+	}else if(n != PASV_VALID){
+		printf("	[FTP] Invalid response from the server\n");
+		return ERROR;
+	}
+
+	/* Retrieve ip address and port */
+	if(sscanf(response,"227 Entering Passive Mode (%d,%d,%d,%d,%d,%d)", &respAddr[0], &respAddr[1], &respAddr[2], &respAddr[3], &respPort[0], &respPort[1]) == EOF){
+		printf("	[FTP] Error fetching ip and port number from response\n");
+		return ERROR;
+	}
+
+	/* Build ip address and port */
+	if(sprintf(addr, "%d.%d.%d.%d",respAddr[0], respAddr[1], respAddr[2], respAddr[3]) < 0){
+		printf("	[FTP] Error creating full ip address\n");
+		return ERROR;
+	}
+	port = respPort[0] + 256 * respPort[1];
+	printf("	[FTP] passive mode ip addres: %s:%d\n", addr, port);
+
+
+	return OK;
 }
 
 int retrieve(){
@@ -122,5 +240,10 @@ int download(){
 }
 
 int closeConnection(){
-  return OK;
+	if(close(FTPSocket.sockfd) == ERROR){
+		perror("	[FTP] Error closing socket connection");
+		return ERROR;
+	}
+    
+    return OK;
 }
