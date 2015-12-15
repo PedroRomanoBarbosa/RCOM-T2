@@ -1,8 +1,15 @@
 #ifndef _FTP_H_
 #define _FTP_H_
 
-#include "URL.h"
-#include "Macros.h"
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#include "parser.h"
+#include "macros.h"
+
+#define FTP_PORT 21
 
 struct url{
 	int anon;
@@ -10,24 +17,26 @@ struct url{
 	char* password;
 	char* host;
 	char* filePath;
-} FTPurl;
+} FTPUrl;
 
-int FTPinitializeStruct(char* matches[], int size);
+int initializeStruct(char* matches[], int size);
 
-int FTPprintStruct();
+int printStruct();
 
-int FTPSendRec(int sockfd, char* buf, char* response);
+int sendRec(int sockfd, char* buf, char* response);
 
-int FTPOpen();
+int openConnection();
 
-int FTPParseUrl(char* str);
+int parseUrl(char* str);
 
-int FTPLogin();
+int login();
 
-int FTPSetPassiveMode();
+int setPassiveMode();
 
-int FTPRetrieve();
+int retrieve();
 
-int FTPCloseConnection();
+int closeConnection();
+
+int endConnection();
 
 #endif
