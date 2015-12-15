@@ -40,11 +40,12 @@ int main(int argv, char* args[]){
 		printf("[MAIN] Error in logging in\n");
 		exit(1);
 	}else{
-		printf("[MAIN] Login sucssessfull\n");
+		printf("[MAIN] Login successfull\n");
 	}
 
 
 	/* Sets passive mode on */
+	printf("[MAIN] Setting passive mode\n");
 	if(setPassive() == ERROR){
 		printf("[MAIN] passive mode activation failed\n");
 		exit(1);
