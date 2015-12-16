@@ -3,7 +3,7 @@
 #include "FTP.h"
 
 int main(int argv, char* args[]){
-
+	
 	printf("\n[MAIN] Initializing application\n");
 
 
@@ -51,6 +51,24 @@ int main(int argv, char* args[]){
 		exit(1);
 	}else{
 		printf("[MAIN] passive mode activated\n");
+	}
+	
+	/* Get file size */
+	printf("[MAIN] Getting file size\n");
+	if(getFileSize() == ERROR){
+		printf("[MAIN] Error checking file size\n"); 
+		exit(1);
+	}else{
+		printf("[MAIN] File size checked\n");
+	}
+	
+	/* Transfer file */
+	printf("[MAIN] Commencing file transfer\n");
+	if(transfer() == ERROR){
+		printf("[MAIN] Error transfering file\n"); 
+		exit(1);
+	}else{
+		printf("[MAIN] File transfer successful\n");
 	}
 
 

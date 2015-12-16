@@ -234,13 +234,88 @@ int setPassive(){
 
 	/* Create a data socket */
 	createSocket(addr, port, &FTPSocket.datafd);
-
+	if(FTPSocket.datafd < 0){
+		printf("	[FTP] Error creating data socket\n");
+		return ERROR;
+	}
 
 	return OK;
 }
 
-int retrieve(){
-  return OK;
+int getFileSize(){
+	
+	char sizeCmd[MAX_CMD];
+	char response[MAX_RESP];
+	int n;
+	
+	sprintf(sizeCmd,"SIZE %s\r\n", FTPUrl.filePath);
+	printf("	[FTP] > SIZE %s\n", FTPUrl.filePath);
+	
+	n = sendCommand(sizeCmd, response);
+	sscanf(response,"%d %lu", &n, &FTPUrl.fileSize); 
+	if(n == PATH_INVALID){
+		printf("	[FTP] Error checking file. File not found\n");
+		return ERROR;
+	}else if(n == SIZE_VALID){
+		printf("	[FTP] Size: %lu\n",FTPUrl.fileSize);
+	}else{
+		printf("	[FTP] Error checking file\n");
+		return ERROR;
+	}
+	
+	return OK;
+}
+
+int transfer(){
+	char retrieveCmd[MAX_CMD];
+	char response[MAX_RESP];
+	int n;
+	unsigned long number = 0;
+	
+	FILE* fp = fopen(basename(FTPUrl.filePath),"w");
+	if(!fp){
+		printf("	[FTP] Error opening local file\n");
+		return ERROR;
+	}
+	
+	sprintf(retrieveCmd,"RETR %s\r\n", FTPUrl.filePath);
+	printf("	[FTP] > RETR %s\n", FTPUrl.filePath);
+	
+	n = sendCommand(retrieveCmd, response);
+	if(n == PATH_INVALID){
+		printf("	[FTP] Error opening file. File not found\n");
+		return ERROR;
+	}else if(n == FILE_STATUS){
+		printf("	[FTP] File found\n");
+	}else{
+		printf("	[FTP] Error getting file\n");
+		return ERROR;
+	}
+	
+	/* Get data packages */
+	char package[MAX_PACK];
+	int m;
+	while( (m = read(FTPSocket.datafd, package, sizeof(package))) ){
+		if(m == ERROR){
+			perror("	[FTP] Error reading package from server\n");
+			return ERROR;
+		}else{
+			number += m;
+			if(fwrite(package, m, sizeof(char), fp) < 0){
+				fclose(fp);
+				printf("	[FTP] Error writting data to local file\n");
+				return ERROR;
+			}
+		}
+	}
+	
+	/* Verify file size */
+	if(number != FTPUrl.fileSize){
+		printf("	[FTP] Local file doesn't have the expected size\n");
+		return ERROR;
+	}
+	
+	return OK;
 }
 
 int endConnection(){
