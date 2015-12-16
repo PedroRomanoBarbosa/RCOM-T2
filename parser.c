@@ -1,6 +1,6 @@
 #include "parser.h"
 
-char* pattern = "ftp://(([a-zA-Z0-9]+):([a-zA-Z0-9]+)@)?([\\.a-zA-Z0-9:]+)/([\\./a-zA-Z0-9]+)$";
+char* pattern = "ftp://(([a-zA-Z0-9]+):([a-zA-Z0-9]+)@)?([\\.a-zA-Z0-9~-]+)/([-_\\./a-zA-Z0-9~]+)$";
 
 
 int regexMatch(char* src, char* matches[]){
