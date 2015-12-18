@@ -31,6 +31,7 @@
 #define PATH_INVALID 550
 #define SIZE_VALID 213
 #define FILE_STATUS 150
+#define CONN_END 226
 
 struct url{
 	int anon;
@@ -71,7 +72,5 @@ int getFileSize();
 int transfer();
 
 int closeConnection();
-
-int endConnection();
 
 #endif
