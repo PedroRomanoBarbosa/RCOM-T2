@@ -13,7 +13,7 @@ int initializeStruct(char* matches[], int size){
 				if(strcmp(match,"") == 0){
 					FTPUrl.anon = TRUE;
 					FTPUrl.username = "anonymous";
-					FTPUrl.password = "123456";
+					FTPUrl.password = "anonymous@mail.com";
 				}else{
 					FTPUrl.anon = FALSE;
 					FTPUrl.username = match;
@@ -308,6 +308,12 @@ int transfer(){
 			}
 		}
 	}
+
+	/* Close file */
+	if(fclose(fp) == EOF){
+		perror("	[FTP] Error closing data socket");
+		return ERROR;
+	}
 	
 	/* Verify file size */
 	if(number != FTPUrl.fileSize){
@@ -318,16 +324,24 @@ int transfer(){
 	return OK;
 }
 
-int endConnection(){
-  return OK;
-}
-
-int download(){
-  return OK;
-}
-
 int closeConnection(){
+	char closeCmd[MAX_CMD];
+	char response[MAX_RESP];
+	int n;
 
+	/* close connection to the FTP server */
+	sprintf(closeCmd,"QUIT\r\n");
+	printf("	[FTP] > QUIT \n");
+
+	n = sendCommand(closeCmd, response);
+	
+	return OK;
+	if(n == CONN_END){
+		printf("	[FTP] Error closing connection\n");
+		return ERROR;
+	}
+
+	/* Close socket's file descriptors */
 	if(close(FTPSocket.sockfd) == ERROR){
 		perror("	[FTP] Error closing connection socket");
 		return ERROR;
